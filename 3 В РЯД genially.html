@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎄 Grammar Quest — Level 5 Only</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: linear-gradient(to bottom, #87ceeb, #e0f7fa); font-family: 'Comic Sans MS', cursive, sans-serif; min-height: 100vh; overflow: hidden; }
+    
+    #container { 
+      width: 100%; 
+      max-width: 1100px; 
+      margin: 0 auto; 
+      padding: 20px; 
+      display: flex; 
+      gap: 20px; 
+      justify-content: center; 
+      align-items: flex-start;
+    }
+
+    /* Left Panel */
+    #left-panel { width: 240px; display: flex; flex-direction: column; gap: 15px; }
+    .panel { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+    
+    #stats { display: flex; justify-content: space-between; background: #ffeb3b; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 18px; }
+    #goal { background: #4caf50; color: white; padding: 15px; border-radius: 12px; text-align: center; font-size: 18px; }
+    #lvl-tag { background: #2196f3; color: white; padding: 10px; border-radius: 12px; text-align: center; font-weight: bold; }
+
+    /* Game Area */
+    #game-area { position: relative; width: 500px; height: 500px; }
+    #grid { 
+      display: grid; 
+      gap: 8px; 
+      background: #cfa972; 
+      padding: 15px; 
+      border-radius: 15px; 
+      width: 100%; 
+      height: 100%;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .cell { 
+      background: #fff8e1; 
+      border: 2px solid #ffecb3; 
+      border-radius: 10px; 
+      font-size: 32px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+      user-select: none; 
+      transition: transform 0.1s, background 0.2s;
+    }
+    .cell:hover { background: #fffde7; }
+    .cell.selected { outline: 4px solid #f44336; transform: scale(1.05); z-index: 10; }
+    .cell.matched { animation: vanish 0.4s forwards; }
+
+    @keyframes vanish { 
+      0% { transform: scale(1); opacity: 1; } 
+      100% { opacity: 0; transform: scale(0.2); } 
+    }
+
+    /* Results Overlay */
+    #results-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border-radius: 15px;
+      z-index: 50;
+      text-align: center;
+      border: 5px solid #4caf50;
+    }
+
+    /* Quiz Modal */
+    #quiz-modal { 
+      position: fixed; 
+      top: 0; left: 0; 
+      width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.85); 
+      display: none; 
+      justify-content: center; 
+      align-items: center; 
+      z-index: 1000; 
+    }
+    #quiz-content { 
+      background: white; 
+      padding: 30px; 
+      border-radius: 20px; 
+      width: 90%; 
+      max-width: 500px; 
+      text-align: center; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    }
+    
+    .quiz-btn { 
+      background: #2196f3; 
+      color: white; 
+      border: none; 
+      padding: 12px 20px; 
+      margin: 8px; 
+      border-radius: 12px; 
+      cursor: pointer; 
+      font-size: 18px; 
+      font-weight: bold; 
+      transition: 0.2s; 
+    }
+    .quiz-btn:hover { 
+      background: #1976d2; 
+      transform: translateY(-2px); 
+    }
+
+    .control-btn { 
+      width: 50px; height: 50px; 
+      border-radius: 50%; 
+      background: #9e9e9e; 
+      color: white; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      cursor: pointer; 
+      border: none; 
+      align-self: center;
+    }
+  </style>
+</head>
+<body>
+
+<div id="container">
+  <div id="left-panel">
+    <div class="panel" id="lvl-tag">Level <span id="lvl-display">5</span></div>
+    <div class="panel">
+      <div id="stats">
+        <span>🏆 <span id="score">0</span></span>
+        <span>⏱ <span id="timer">90</span></span>
+      </div>
+    </div>
+    <div class="panel" id="goal">
+      🎯 Goal: <span id="collected">0</span> / <span id="target">20</span> ⭐
+    </div>
+    <button class="control-btn" onclick="location.reload()">🔄</button>
+  </div>
+
+  <div id="game-area">
+    <div id="grid"></div>
+    
+    <div id="results-overlay">
+      <h2 id="res-title" style="font-size: 40px; color: #2e7d32; margin-bottom: 10px;">🎉 Victory!</h2>
+      <p id="res-total" style="font-size: 24px; margin-bottom: 20px;"></p>
+      <button id="next-btn" style="background: #4caf50; color: white; padding: 15px 40px; border: none; border-radius: 12px; font-size: 22px; cursor: pointer; font-weight: bold;" onclick="location.reload()">🔄 PLAY AGAIN</button>
+    </div>
+  </div>
+</div>
+
+<div id="quiz-modal">
+  <div id="quiz-content">
+    <h3 style="color: #d32f2f; margin-bottom: 15px;">📝 Sentence Builder</h3>
+    <div id="quiz-question" style="font-size: 20px; margin-bottom: 20px; min-height: 50px;"></div>
+    <div id="quiz-options"></div>
+    <div id="quiz-feedback" style="margin-top: 15px; height: 24px; font-weight: bold;"></div>
+  </div>
+</div>
+
+<script>
+// ✅ addIds function
+function addIds(arr, prefix) {
+  return arr.map((item, i) => ({ ...item, id: `${prefix}-${i + 1}` }));
+}
+
+// ONLY LEVEL 5
+const grammarData = {
+  5: addIds([
+    { a: "she likes apples", words: ["likes", "she", "apples"] },
+    { a: "i do not swim", words: ["not", "i", "do", "swim"] },
+    { a: "do you like milk", words: ["do", "like", "milk", "you"] },
+    { a: "he plays the piano", words: ["plays", "the", "he", "piano"] },
+    { a: "we go to school", words: ["go", "we", "school", "to"] },
+    { a: "does he play football", words: ["does", "football", "he", "play"] },
+    { a: "my cat is fat", words: ["fat", "my", "is", "cat"] },
+    { a: "they do not cry", words: ["do", "they", "not", "cry"] },
+    { a: "she does not cook", words: ["does", "not", "she", "cook"] },
+    { a: "i wash my hands", words: ["wash", "my", "hands", "i"] },
+    { a: "do birds fly high", words: ["do", "birds", "fly", "high"] },
+    { a: "it is a big dog", words: ["is", "a", "dog", "it", "big"] },
+    { a: "we like ice cream", words: ["ice", "we", "like", "cream"] },
+    { a: "he does not jump", words: ["does", "not", "jump", "he"] },
+    { a: "she helps her mom", words: ["her", "helps", "mom", "she"] },
+    { a: "do they live here", words: ["do", "live", "they", "here"] },
+    { a: "i am a student", words: ["a", "i", "am", "student"] },
+    { a: "they run in the park", words: ["run", "the", "in", "park", "they"] },
+    { a: "does she read books", words: ["does", "books", "read", "she"] },
+    { a: "my dad drives a car", words: ["drives", "car", "a", "dad", "my"] },
+    { a: "it rains in autumn", words: ["in", "rains", "it", "autumn"] },
+    { a: "we drink orange juice", words: ["drink", "orange", "juice", "we"] },
+    { a: "he has a big house", words: ["a", "house", "big", "he", "has"] },
+    { a: "you are my best friend", words: ["are", "best", "friend", "you", "my"] },
+    { a: "sun shines in the sky", words: ["shines", "in", "the", "sky", "sun"] },
+    { a: "i do not want cake", words: ["do", "not", "want", "cake", "i"] },
+    { a: "she watches tv at night", words: ["watches", "tv", "at", "night", "she"] },
+    { a: "does it look good", words: ["does", "look", "good", "it"] },
+    { a: "they play with a ball", words: ["play", "with", "a", "ball", "they"] },
+    { a: "we love our green park", words: ["love", "our", "green", "park", "we"] }
+  ], 'l5')
+};
+
+let score = 0, collected = 0, timeLeft = 90, timerId = null;
+let gameActive = true, cells = [], first = null, size = 8, targetCount = 20;
+let matchesCounter = 0; 
+let isQuizPending = false; 
+let isProcessing = false;
+let availableQuestions = [...grammarData[5]];
+// Основной эмодзи уровня 5 — ⭐, но фоновые нужны для разнообразия
+const targetEmoji = "⭐";
+const allEmojis = ["🎄", "🎁", "⭐", "❄️", "🔔"]; // ⭐ обязательно должен быть здесь
+
+function startTimer() {
+  clearInterval(timerId);
+  timerId = setInterval(() => {
+    if (!gameActive) return;
+    timeLeft--;
+    document.getElementById("timer").textContent = timeLeft;
+    if (timeLeft <= 0) endLevel(false);
+  }, 1000);
+}
+
+function showGrammarQuiz() {
+  if (availableQuestions.length === 0) availableQuestions = [...grammarData[5]];
+  
+  gameActive = false;
+  isQuizPending = true;
+
+  const modal = document.getElementById("quiz-modal");
+  const qEl = document.getElementById("quiz-question");
+  const optEl = document.getElementById("quiz-options");
+  const fbEl = document.getElementById("quiz-feedback");
+
+  modal.style.display = "flex";
+  fbEl.textContent = "";
+  fbEl.style.color = "";
+  optEl.innerHTML = "";
+
+  const qIndex = Math.floor(Math.random() * availableQuestions.length);
+  const q = availableQuestions[qIndex];
+  let firstAttempt = true;
+
+  const finishQuiz = () => {
+    availableQuestions.splice(qIndex, 1);
+    setTimeout(() => {
+      modal.style.display = "none";
+      gameActive = true;
+      isQuizPending = false;
+      startTimer();
+    }, 600);
+  };
+
+  qEl.innerHTML = `Build the sentence:<br><div id="word-dropzone" style="min-height:45px; border-bottom:2px dashed #2196f3; margin:15px; padding:5px; font-size:24px; color:#2196f3;"></div>`;
+  const dropzone = document.getElementById("word-dropzone");
+  let userWords = [];
+  const shuffledWords = [...q.words].sort(() => Math.random() - 0.5);
+  const buttons = [];
+
+  shuffledWords.forEach(word => {
+    const b = document.createElement("button");
+    b.className = "quiz-btn";
+    b.textContent = word;
+    b.onclick = () => {
+      if (userWords.length < q.words.length && !b.disabled) {
+        userWords.push(word);
+        dropzone.textContent = userWords.join(" ");
+        b.disabled = true;
+        b.style.opacity = "0.5";
+
+        if (userWords.length === q.words.length) {
+          const userAnswer = userWords.join(" ").toLowerCase().trim();
+          const correctAnswer = q.a.toLowerCase().trim();
+
+          if (userAnswer === correctAnswer) {
+            if (firstAttempt) {
+              fbEl.textContent = "✨ Perfect! First try!";
+              fbEl.style.color = "green";
+              finishQuiz();
+            } else {
+              fbEl.textContent = "✅ Correct! But aim for first try. Next question...";
+              fbEl.style.color = "orange";
+              setTimeout(showGrammarQuiz, 600);
+            }
+          } else {
+            firstAttempt = false;
+            fbEl.textContent = "❌ Incorrect. Rearrange and try again.";
+            fbEl.style.color = "red";
+            setTimeout(() => {
+              userWords = [];
+              dropzone.textContent = "";
+              buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.style.opacity = "1";
+              });
+            }, 800);
+          }
+        }
+      }
+    };
+    optEl.appendChild(b);
+    buttons.push(b);
+  });
+}
+
+function initLevel() {
+  collected = 0;
+  matchesCounter = 0;
+  isQuizPending = false;
+  isProcessing = false;
+  timeLeft = 90;
+  targetCount = 20;
+
+  document.getElementById("target").textContent = targetCount;
+  document.getElementById("collected").textContent = "0";
+  document.getElementById("results-overlay").style.display = "none";
+  
+  const grid = document.getElementById("grid");
+  grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+  grid.innerHTML = "";
+  cells = [];
+  
+  // Заполняем случайными эмодзи из всего набора
+  for (let i = 0; i < size * size; i++) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    c.dataset.index = i;
+    c.textContent = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+    c.onclick = () => selectCell(c);
+    grid.appendChild(c);
+    cells.push(c);
+  }
+  
+  // Убеждаемся, что НЕТ начальных совпадений
+  while (checkMatches(true)) {
+    for (let i = 0; i < cells.length; i++) {
+      cells[i].textContent = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+    }
+  }
+
+  gameActive = true;
+  startTimer();
+}
+
+function selectCell(c) {
+  if (!gameActive || isQuizPending || isProcessing) return;
+  
+  if (!first) {
+    first = c;
+    c.classList.add("selected");
+  } else {
+    const i1 = parseInt(first.dataset.index), i2 = parseInt(c.dataset.index);
+    const dist = Math.abs(i1 % size - i2 % size) + Math.abs(Math.floor(i1 / size) - Math.floor(i2 / size));
+    if (dist === 1) {
+      swap(first, c);
+      setTimeout(() => {
+        const hadMatch = checkMatches();
+        if (!hadMatch) {
+          swap(first, c);
+        }
+      }, 300);
+    }
+    first.classList.remove("selected");
+    first = null;
+  }
+}
+
+function swap(a, b) { 
+  let t = a.textContent; 
+  a.textContent = b.textContent; 
+  b.textContent = t; 
+}
+
+function checkMatches(initialCheck = false) {
+  let matched = new Set();
+  
+  // По строкам
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size - 2; c++) {
+      const i = r * size + c;
+      if (
+        cells[i].textContent &&
+        cells[i].textContent === cells[i+1].textContent &&
+        cells[i].textContent === cells[i+2].textContent
+      ) {
+        matched.add(i); matched.add(i+1); matched.add(i+2);
+      }
+    }
+  }
+
+  // По столбцам
+  for (let c = 0; c < size; c++) {
+    for (let r = 0; r < size - 2; r++) {
+      const i = r * size + c;
+      if (
+        cells[i].textContent &&
+        cells[i].textContent === cells[i+size].textContent &&
+        cells[i].textContent === cells[i+size*2].textContent
+      ) {
+        matched.add(i); matched.add(i+size); matched.add(i+size*2);
+      }
+    }
+  }
+
+  if (matched.size === 0) return false;
+
+  if (initialCheck) return true;
+
+  isProcessing = true;
+  matchesCounter++;
+
+  // Подсчитываем ТОЛЬКО целевые эмодзи (⭐)
+  matched.forEach(idx => {
+    if (cells[idx].textContent === targetEmoji) {
+      collected++;
+      document.getElementById("collected").textContent = collected;
+    }
+    cells[idx].classList.add("matched");
+  });
+
+  score += matched.size * 10;
+  document.getElementById("score").textContent = score;
+
+  setTimeout(() => {
+    matched.forEach(idx => {
+      cells[idx].classList.remove("matched");
+      cells[idx].textContent = "";
+    });
+    fillEmpty();
+  }, 400);
+
+  return true;
+}
+
+function fillEmpty() {
+  for (let c = 0; c < size; c++) {
+    let empty = 0;
+    for (let r = size - 1; r >= 0; r--) {
+      let idx = r * size + c;
+      if (cells[idx].textContent === "") empty++;
+      else if (empty > 0) {
+        cells[(r + empty) * size + c].textContent = cells[idx].textContent;
+        cells[idx].textContent = "";
+      }
+    }
+    for (let r = 0; r < empty; r++) {
+      cells[r * size + c].textContent = allEmojis[Math.floor(Math.random() * allEmojis.length)];
+    }
+  }
+
+  setTimeout(() => {
+    const hadMatches = checkMatches();
+    if (!hadMatches) {
+      isProcessing = false;
+      if (gameActive && !isQuizPending) {
+        if (collected >= targetCount) {
+          endLevel(true);
+        } else if (matchesCounter >= 2) {
+          matchesCounter = 0;
+          setTimeout(showGrammarQuiz, 200);
+        }
+      }
+    }
+  }, 300);
+}
+
+function endLevel(win) {
+  gameActive = false;
+  clearInterval(timerId);
+  
+  const overlay = document.getElementById("results-overlay");
+  overlay.style.display = "flex";
+  
+  if (win) {
+    document.getElementById("res-title").textContent = "🎉 Victory!";
+    document.getElementById("res-total").textContent = `Score: ${score}`;
+  } else {
+    document.getElementById("res-title").textContent = "❄️ Time's up!";
+    document.getElementById("res-total").textContent = `Score: ${score}`;
+  }
+}
+
+// Start game
+initLevel();
+</script>
+</body>
+</html>
